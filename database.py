@@ -19,6 +19,7 @@ class User(Base):
     chat_id = Column(Integer, unique=True, nullable=False)
     name = Column(String)
     username = Column(String)
+    language = Column(String, default="fa", server_default="fa")
     circles = relationship("Circle", back_populates="user")
 
 
@@ -42,9 +43,9 @@ def create_tables():
     Base.metadata.create_all(engine)
 
 
-def create_user(chat_id, name, username):
+def create_user(chat_id, name, username, language="fa"):
     with Session() as session:
-        user = User(chat_id=chat_id, name=name, username=username)
+        user = User(chat_id=chat_id, name=name, username=username, language=language)
         session.add(user)
         session.commit()
         session.refresh(user)
@@ -58,6 +59,23 @@ def get_user(chat_id):
 
 
 # ======================== USER ACTIONS ========================
+
+def set_user_language(chat_id, language):
+    with Session() as session:
+        user = session.query(User).filter(User.chat_id == chat_id).first()
+        if user:
+            user.language = language
+            session.commit()
+            return True
+        return False
+
+
+def get_user_language(chat_id):
+    with Session() as session:
+        user = session.query(User).filter(User.chat_id == chat_id).first()
+        if user and user.language:
+            return user.language
+        return "fa"
 
 def add_friend_to_db(chat_id, fullname, nickname, birthday, phone, location):
     with Session() as session:
@@ -119,3 +137,22 @@ def remove_friend_from_db(chat_id, fullname):
             session.commit()
             return True
         return False
+    
+
+
+def update_friend_info(chat_id, fullname, field, value):
+    with Session() as session:
+        user = session.query(User).filter(User.chat_id == chat_id).first()
+        if not user:
+            return False
+        
+        friend_to_update = (
+            session.query(Circle).filter(Circle.user_id == user.chat_id, func.trim(Circle.fullname).ilike(fullname.strip())).first()
+        )
+
+        if friend_to_update:
+            setattr(friend_to_update, field, value)
+            session.commit()
+            return True
+        return False
+    
