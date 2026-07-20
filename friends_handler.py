@@ -27,7 +27,17 @@ from database import (
     get_user_language,
     update_friend_info,
 )
+from assets.date_picker import (
+    jalali_year_grid,
+    jalali_month_grid,
+    jalali_day_grid,
+    gregorian_year_grid,
+    gregorian_month_grid,
+    gregorian_day_grid,
+    format_birthday_for_user
+)
 from language_handler import load_assets
+from khayyam import JalaliDate
 import asyncio
 
 # Conversation state label integers
@@ -77,11 +87,89 @@ async def get_fullname(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def get_nickname(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text, keyboard = load_assets(update.effective_user.id)
     context.user_data["nickname"] = update.message.text
+    user_lang = get_user_language(update.effective_chat.id)
+    if user_lang == "fa":
+        prompt_text = "سال تولدش رو انتخاب کن\nYYYY-MM-DD"
+        markup = jalali_year_grid()
+
+    else:
+        prompt_text = "Select birth year\nYYYY-MM-DD"
+        markup = gregorian_year_grid()
     await update.message.reply_text(
-        text["ask_birthday"],
-        reply_markup=keyboard["cancel_markup"],
+        prompt_text,
+        reply_markup=markup,
     )
     return BIRTHDAY
+
+
+async def process_calendar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+    chat_id = update.effective_chat.id
+    text, keyboard = load_assets(chat_id)
+    user_lang = get_user_language(chat_id)
+
+    if data == "DATE-IGNORE":
+        return BIRTHDAY
+
+    # ----- year selected -----
+    if data.startswith("DATE-YR-"):
+        year = data.split("-")[2]
+        context.user_data["temp_year"] = year
+
+        if user_lang == "fa":
+            prompt_text = f"ماه تولدش رو انتخاب کن\n{year} - MM - DD"
+            markup = jalali_month_grid(int(year))
+
+        else:
+            prompt_text = f"Select month\n{year}-MM-DD"
+            markup = gregorian_month_grid(int(year))
+
+        await query.message.edit_text(prompt_text, reply_markup=markup)
+        return BIRTHDAY
+
+    # ----- month selected -----
+    elif data.startswith("DATE-MO-"):
+        _, _, year, month = data.split("-")
+        context.user_data["temp_month"] = month
+        if user_lang == "fa":
+            fa_months = text["months"]
+            m_name = fa_months[int(month) - 1]
+            prompt_text = f"روز تولدش رو انتخاب کن\n{year} - {m_name} - DD"
+            markup = jalali_day_grid(int(year), int(month))
+
+        else:
+            eng_months = text["months"]
+            m_name = eng_months[int(month) - 1]
+            prompt_text = f"Select day\n{year}-{month}-DD"
+            markup = gregorian_day_grid(int(year), int(month))
+
+        await query.message.edit_text(prompt_text, reply_markup=markup)
+        return BIRTHDAY
+
+    # ----- day selected -> standardize and save to DB -----
+    elif data.startswith("DATE-DY-"):
+        _, _, year, month, day = data.split("-")
+
+        if user_lang == "fa":
+            jalali_input = JalaliDate(int(year), int(month), int(day))
+            gregorian_date = jalali_input.todate()
+            formatted_db_date = gregorian_date.strftime("%d %m %Y")
+            display_text = f"{day} {jalali_input.monthname()} {year} انتخاب شد!"
+
+        else:
+            formatted_db_date = f"{str(day).zfill(2)} {str(month).zfill(2)} {year}"
+            display_text = f"Selected {formatted_db_date}!"
+        context.user_data["birthday"] = formatted_db_date
+        await query.message.edit_text(display_text, reply_markup=None)
+        await query.message.reply_text(
+            text["ask_phone"], reply_markup=keyboard["phone_markup"]
+        )
+        context.user_data.pop("temp_year", None)
+        context.user_data.pop("temp_month", None)
+
+        return PHONE
 
 
 async def get_birthday(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -151,7 +239,7 @@ add_friend_handler = ConversationHandler(
     states={
         FULLNAME: [MessageHandler(state_filter, get_fullname)],
         NICKNAME: [MessageHandler(state_filter, get_nickname)],
-        BIRTHDAY: [MessageHandler(state_filter, get_birthday)],
+        BIRTHDAY: [CallbackQueryHandler(process_calendar, pattern="^DATE-")],
         PHONE: [MessageHandler(state_filter, get_phone)],
         LOCATION: [MessageHandler(state_filter, get_location)],
     },
@@ -175,18 +263,20 @@ async def list_of_friends(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    user_lang = get_user_language(chat_id)
     list_of_data = ""
     first_friend_name = friends[0]["fullname"] if friends else "target"
     for friend in friends:
         fullname = friend["fullname"]
+        display_birthday = format_birthday_for_user(friend["birthday"], user_lang)
         list_of_data += text["list_item_format"].format(
             fullname=fullname,
             nickname=friend["nickname"],
-            birthday=friend["birthday"],
+            birthday=display_birthday,
             phone=friend["phone"],
             location=friend["location"],
         )
-        
+
     await update.message.reply_text(
         text["list_header"] + list_of_data,
         reply_markup=keyboard["friend_action_keyboard"](first_friend_name),
@@ -207,7 +297,9 @@ async def select_friend_to_remove(update: Update, context: ContextTypes.DEFAULT_
         # 🚦 Traffic Cop: Did they click a button or type text?
         if update.callback_query:
             await update.callback_query.answer()
-            await update.callback_query.message.reply_text(msg, reply_markup=keyboard["main_menu"])
+            await update.callback_query.message.reply_text(
+                msg, reply_markup=keyboard["main_menu"]
+            )
         else:
             await update.message.reply_text(msg, reply_markup=keyboard["main_menu"])
         return ConversationHandler.END
@@ -215,17 +307,22 @@ async def select_friend_to_remove(update: Update, context: ContextTypes.DEFAULT_
     # 2. Build the inline keyboard list of friends
     inline_keyboard = []
     for friend in friends:
-        inline_keyboard.append([
-            InlineKeyboardButton(
-                text=friend["fullname"],
-                callback_data=f"remove_{friend['fullname']}",
-            )
-        ])
-        
+        inline_keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text=friend["fullname"],
+                    callback_data=f"remove_{friend['fullname']}",
+                )
+            ]
+        )
+
     from database import get_user_language
+
     user_lang = get_user_language(chat_id)
     cancel_label = "❌ Cancel Process" if user_lang == "en" else "❌ لغو عملیات"
-    inline_keyboard.append([InlineKeyboardButton(text=cancel_label, callback_data="del_cancel")])
+    inline_keyboard.append(
+        [InlineKeyboardButton(text=cancel_label, callback_data="del_cancel")]
+    )
 
     # 3. Send the menu safely
     if update.callback_query:
@@ -242,8 +339,9 @@ async def select_friend_to_remove(update: Update, context: ContextTypes.DEFAULT_
             text["who_to_remove"],
             reply_markup=InlineKeyboardMarkup(inline_keyboard),
         )
-        
+
     return CHOOSE_DELETION
+
 
 async def remove_friend(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text, keyboard = load_assets(update.effective_user.id)
@@ -399,36 +497,22 @@ async def save_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
-# At the bottom of friends_handler.py
-
 edit_friend_handler = ConversationHandler(
     entry_points=[
-        # 1. Catches when the user types the slash command: /edit
         CommandHandler("edit", edit_friend_trigger),
-        
-        # 2. Catches when the user types the word "Edit" or "ویرایش" (or taps the reply keyboard)
         MessageHandler(filters.Regex("^(Edit|edit|ویرایش)$"), edit_friend_trigger),
-        
-        # 3. Catches when the user clicks the inline "Edit" button under the list card
-        CallbackQueryHandler(edit_friend_trigger, pattern="^edit_")
+        CallbackQueryHandler(edit_friend_trigger, pattern="^edit_target_"),
     ],
     states={
-        # Room 20: Wait for them to choose a friend's name button
         ASK_FIELD: [
             CallbackQueryHandler(show_edit_options, pattern="^edit_target_"),
-            CallbackQueryHandler(show_edit_options, pattern="^edit_cancel$")
+            CallbackQueryHandler(show_edit_options, pattern="^edit_cancel$"),
         ],
-        # Room 21: Wait for them to choose a field option button (Fullname, Nickname, etc.)
-        ASK_INPUT: [
-            CallbackQueryHandler(get_input, pattern=".*")
-        ],
-        # Room 22: Wait for them to TYPE the new text replacement value
-        SAVE_INPUT: [
-            MessageHandler(state_filter, save_input)
-        ]
+        ASK_INPUT: [CallbackQueryHandler(get_input, pattern=".*")],
+        SAVE_INPUT: [MessageHandler(state_filter, save_input)],
     },
     fallbacks=[
         CommandHandler("cancel", cancel),
-        MessageHandler(filters.Regex(cancel_regex), cancel)
-    ]
+        MessageHandler(filters.Regex(cancel_regex), cancel),
+    ],
 )

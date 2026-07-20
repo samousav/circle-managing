@@ -36,5 +36,18 @@ Tap /help or if you know how to use the bot, start with the buttons below.""",
     "response_to_edit": "So you wanna edit some information about a friend. Which friend is it?",
     "what_to_edit": "Alright, what do you wanna change about {fullname}?",
     "done": "Done!",
-    
+    "months": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ]
 }
