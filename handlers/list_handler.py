@@ -1,8 +1,8 @@
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
-from language_handler import load_assets
+from handlers.language_handler import load_assets
 from database import Session, Circle, User, get_user_language
-from friends_handler import add_friend, FULLNAME
+from handlers.friends_handler import add_friend, FULLNAME
 from assets.date_picker import format_birthday_for_user
 
 

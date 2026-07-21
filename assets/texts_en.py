@@ -7,7 +7,8 @@ Tap /help or if you know how to use the bot, start with the buttons below.""",
 - Add a friend /add
 - List of friends /list
 - Remove a friend /remove
-- Edit a friends info /edit""",
+- Edit a friends info /edit
+- Change language /settings""",
     "cancel_text": "Okay, I won't add your new friend. :(. You can add a new friend by tapping /add again, whenever you liked.",
     "get_fullname_text": "So you wanna add a friend? Okay! What's the fullname of your friend?",
     "edit_fullname_text": "What do you wanna set their fullname to?",
@@ -49,5 +50,9 @@ Tap /help or if you know how to use the bot, start with the buttons below.""",
         "Oct",
         "Nov",
         "Dec",
-    ]
+    ],
+    "birthday_today": "Today is <b>{fullname}</b>'s birthday! 🎉\nHappy birthday to {nickname} 🥳",
+    "birthday_tomorrow": "Only 1 day left until <b>{fullname}</b>'s birthday! ⏳\nHave you got a nice present for {nickname}? 🎈",
+    "birthday_in_3_days": "Reminder: 3 days left until <b>{fullname}</b>'s birthday!",
+    "birthday_in_7_days": "Reminder: 7 days left until <b>{fullname}</b>'s birthday!"
 }

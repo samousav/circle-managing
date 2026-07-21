@@ -36,7 +36,7 @@ from assets.date_picker import (
     gregorian_day_grid,
     format_birthday_for_user
 )
-from language_handler import load_assets
+from handlers.language_handler import load_assets
 from khayyam import JalaliDate
 import asyncio
 

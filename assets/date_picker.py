@@ -52,7 +52,7 @@ def jalali_day_grid(year: int, month: int):
     keyboard = []
     total_days = JalaliDate(year, month, 1).daysinmonth
     current_day = 1
-    for row in range(6):
+    for row in range(7):
         row_buttons = []
         for col in range(5):
             if current_day <= total_days:
@@ -68,6 +68,8 @@ def jalali_day_grid(year: int, month: int):
                     InlineKeyboardButton(text=" ", callback_data="DATE-IGNORE")
                 )
         keyboard.append(row_buttons)
+        if current_day > total_days:
+            break
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -126,7 +128,7 @@ def gregorian_day_grid(year: int, month: int):
     keyboard = []
     total_days = get_days_in_month(year, month)
     current_day = 1
-    for row in range(6):
+    for row in range(7):
         row_buttons = []
         for col in range(5):
             if current_day <= total_days:
@@ -135,6 +137,8 @@ def gregorian_day_grid(year: int, month: int):
             else:
                 row_buttons.append(InlineKeyboardButton(text=" ", callback_data="DATE-IGNORE"))
         keyboard.append(row_buttons)
+        if current_day > total_days:
+            break
     return InlineKeyboardMarkup(keyboard)
 
 
