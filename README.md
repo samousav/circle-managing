@@ -1,5 +1,5 @@
 
-# Circle Manager Bot 📋
+# Socircle Bot 📋
 
 A simple, asynchronous Telegram bot built with Python (`python-telegram-bot`) and SQLAlchemy. This bot acts as a personal CRM tool to help you keep track of your close circle of friends, including their birthdays, phone numbers, and locations.
 
