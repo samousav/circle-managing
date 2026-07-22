@@ -5,9 +5,9 @@ import datetime
 # ---------- JALALI DATE PICKER ----------
 
 
-def jalali_year_grid():
+def jalali_year_grid(start_year: int = 1375):
     keyboard = []
-    current_year = 1375
+    current_year = start_year
     for row in range(5):
         row_buttons = [
             InlineKeyboardButton(text=str(y), callback_data=f"DATE-YR-{y}")
@@ -15,6 +15,11 @@ def jalali_year_grid():
         ]
         keyboard.append(row_buttons)
         current_year += 4
+    prev_start = start_year - 20
+    next_start = start_year + 20
+
+    nav_row = [InlineKeyboardButton(text="◀", callback_data=f"DATE-YRPAGE-FA-{prev_start}"), InlineKeyboardButton(text="▶", callback_data=f"DATE-YRPAGE-FA-{next_start}")]
+    keyboard.append(nav_row)
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -76,9 +81,9 @@ def jalali_day_grid(year: int, month: int):
 # ---------- GREGORIAN DATE PICKER ----------
 
 
-def gregorian_year_grid():
+def gregorian_year_grid(start_year: int = 2000):
     keyboard = []
-    current_year = 2000
+    current_year = start_year
     for row in range(5):
         row_buttons = [
             InlineKeyboardButton(text=str(y), callback_data=f"DATE-YR-{y}")
@@ -86,6 +91,11 @@ def gregorian_year_grid():
         ]
         keyboard.append(row_buttons)
         current_year += 4
+
+    prev_start = start_year - 20
+    next_start = start_year + 20
+    nav_row = [InlineKeyboardButton(text="◀", callback_data=f"DATE-YRPAGE-EN-{prev_start}"), InlineKeyboardButton(text="▶", callback_data=f"DATE-YRPAGE-EN-{next_start}")]
+    keyboard.append(nav_row)
     return InlineKeyboardMarkup(keyboard)
 
 

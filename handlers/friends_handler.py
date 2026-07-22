@@ -112,6 +112,20 @@ async def process_calendar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == "DATE-IGNORE":
         return BIRTHDAY
+    
+    if data.startswith("DATE-YRPAGE-"):
+        _, _, lang_code, new_start_year = data.split("-")
+        new_start_year = int(new_start_year)
+
+        if lang_code == "FA":
+            markup = jalali_year_grid(start_year=new_start_year)
+            prompt_text = "سال تولدش رو انتخاب کن\nYYYY-MM-DD"
+        else:
+            markup = gregorian_year_grid(start_year=new_start_year)
+            prompt_text = "Select birth year\nYYYY-MM-DD"
+
+        await query.message.edit_text(prompt_text, reply_markup=markup)
+        return BIRTHDAY
 
     # ----- year selected -----
     if data.startswith("DATE-YR-"):

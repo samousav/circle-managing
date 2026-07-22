@@ -39,6 +39,7 @@ class Circle(Base):
 
 # ======================== DATABASE ACTIONS ========================
 
+
 def create_tables():
     Base.metadata.create_all(engine)
 
@@ -60,6 +61,7 @@ def get_user(chat_id):
 
 # ======================== USER ACTIONS ========================
 
+
 def set_user_language(chat_id, language):
     with Session() as session:
         user = session.query(User).filter(User.chat_id == chat_id).first()
@@ -76,6 +78,7 @@ def get_user_language(chat_id):
         if user and user.language:
             return user.language
         return "fa"
+
 
 def add_friend_to_db(chat_id, fullname, nickname, birthday, phone, location):
     with Session() as session:
@@ -126,18 +129,17 @@ def remove_friend_from_db(chat_id, fullname):
         friend_to_delete = (
             session.query(Circle)
             .filter(
-                Circle.user_id == user.chat_id, 
-                func.trim(Circle.fullname).ilike(fullname.strip())
+                Circle.user_id == user.chat_id,
+                func.trim(Circle.fullname).ilike(fullname.strip()),
             )
             .first()
         )
-        
+
         if friend_to_delete:
             session.delete(friend_to_delete)
             session.commit()
             return True
         return False
-    
 
 
 def update_friend_info(chat_id, fullname, field, value):
@@ -145,9 +147,14 @@ def update_friend_info(chat_id, fullname, field, value):
         user = session.query(User).filter(User.chat_id == chat_id).first()
         if not user:
             return False
-        
+
         friend_to_update = (
-            session.query(Circle).filter(Circle.user_id == user.chat_id, func.trim(Circle.fullname).ilike(fullname.strip())).first()
+            session.query(Circle)
+            .filter(
+                Circle.user_id == user.chat_id,
+                func.trim(Circle.fullname).ilike(fullname.strip()),
+            )
+            .first()
         )
 
         if friend_to_update:
@@ -155,4 +162,26 @@ def update_friend_info(chat_id, fullname, field, value):
             session.commit()
             return True
         return False
-    
+
+
+# ======================== ADMIN ACTIONS ========================
+
+
+def get_all_users():
+    with Session() as session:
+        result = (
+            session.query(User, func.count(Circle.id).label("friend_count"))
+            .outerjoin(Circle, User.chat_id == Circle.user_id)
+            .group_by(User.id)
+            .all()
+        )
+        return [
+            {
+                "id": row.User.id,
+                "chat_id": row.User.chat_id,
+                "name": row.User.name,
+                "username": row.User.username,
+                "language": row.User.language,
+                "friend_count": row.friend_count,
+            } for row in result
+        ]
