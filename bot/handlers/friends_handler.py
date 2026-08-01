@@ -14,10 +14,10 @@ from telegram.ext import (
     filters,
 )
 from telegram.constants import ParseMode
-import assets.texts_en as texts_en
-import assets.texts_fa as texts_fa
-import assets.keyboards_en as keyboards_en
-import assets.keyboards_fa as keyboards_fa
+import bot.assets.texts_en as texts_en
+import bot.assets.texts_fa as texts_fa
+import bot.assets.keyboards_en as keyboards_en
+import bot.assets.keyboards_fa as keyboards_fa
 
 from database import (
     get_user,
@@ -27,7 +27,7 @@ from database import (
     get_user_language,
     update_friend_info,
 )
-from assets.date_picker import (
+from bot.assets.date_picker import (
     jalali_year_grid,
     jalali_month_grid,
     jalali_day_grid,
@@ -36,7 +36,7 @@ from assets.date_picker import (
     gregorian_day_grid,
     format_birthday_for_user
 )
-from handlers.language_handler import load_assets
+from bot.handlers.language_handler import load_assets
 from khayyam import JalaliDate
 import asyncio
 
@@ -169,11 +169,11 @@ async def process_calendar(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if user_lang == "fa":
             jalali_input = JalaliDate(int(year), int(month), int(day))
             gregorian_date = jalali_input.todate()
-            formatted_db_date = gregorian_date.strftime("%d %m %Y")
+            formatted_db_date = gregorian_date.strftime("%Y-%m-%d")
             display_text = f"{day} {jalali_input.monthname()} {year} انتخاب شد!"
 
         else:
-            formatted_db_date = f"{str(day).zfill(2)} {str(month).zfill(2)} {year}"
+            formatted_db_date = f"{year}-{str(month).zfill(2)}-{str(day).zfill(2)}"
             display_text = f"Selected {formatted_db_date}!"
         context.user_data["birthday"] = formatted_db_date
         await query.message.edit_text(display_text, reply_markup=None)

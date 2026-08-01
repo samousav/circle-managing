@@ -1,0 +1,15 @@
+/* Define your English font */
+@font-face {
+    font-family: 'CustomEnglish';
+    src: url('/fonts/InstrumentSans-VariableFont_wdth,wght.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+/* Define your Farsi font */
+@font-face {
+    font-family: 'CustomFarsi';
+    src: url('/fonts/Anjoman-Bold.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}

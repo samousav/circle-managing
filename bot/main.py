@@ -1,3 +1,8 @@
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -7,22 +12,22 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
-from handlers.friends_handler import (
+from bot.handlers.friends_handler import (
     list_of_friends,
     add_friend_handler,
     remove_friend_handler,
     edit_friend_handler,
 )
 from database import create_user, get_user, create_tables
-from assets.texts_fa import items as text_fa
-from handlers.language_handler import (
+from bot.assets.texts_fa import items as text_fa
+from bot.handlers.language_handler import (
     send_language_picker,
     handle_language_selection,
     load_assets,
 )
-from handlers.reminder_handler import birthday_reminder
-from handlers.list_handler import handle_list_actions
-from admin_functions import (
+from bot.handlers.reminder_handler import birthday_reminder
+from bot.handlers.list_handler import handle_list_actions
+from bot.admin_functions import (
     get_all_users_handler,
     WAITING_FOR_BROADCAST_CONTENT,
     start_broadcast,
@@ -33,7 +38,6 @@ from admin_functions import (
 from dotenv import load_dotenv
 import datetime
 import zoneinfo
-import os
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
@@ -84,8 +88,6 @@ if application.job_queue:
         time=datetime.time(hour=0, minute=0, second=0, tzinfo=tehran_tz),
     )
 
-
-# 🌟 Add it at the top of your handlers stack!
 application.add_handler(broadcast_handler)
 application.add_handler(CommandHandler("all_users", get_all_users_handler))
 application.add_handler(CommandHandler("start", start))

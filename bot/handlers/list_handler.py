@@ -1,9 +1,9 @@
 from telegram import Update
 from telegram.ext import ContextTypes, ConversationHandler
-from handlers.language_handler import load_assets
+from bot.handlers.language_handler import load_assets
 from database import Session, Circle, User, get_user_language
-from handlers.friends_handler import add_friend, FULLNAME
-from assets.date_picker import format_birthday_for_user
+from bot.handlers.friends_handler import add_friend, FULLNAME
+from bot.assets.date_picker import format_birthday_for_user
 
 
 async def handle_list_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):

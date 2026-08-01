@@ -1,10 +1,10 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from database import set_user_language, get_user_language
-import assets.keyboards_en as keyboards_en
-import assets.keyboards_fa as keyboards_fa
-import assets.texts_en as texts_en
-import assets.texts_fa as texts_fa
+import bot.assets.keyboards_en as keyboards_en
+import bot.assets.keyboards_fa as keyboards_fa
+import bot.assets.texts_en as texts_en
+import bot.assets.texts_fa as texts_fa
 
 
 def load_assets(chat_id):

@@ -3,12 +3,17 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, Integer, String, ForeignKey, func
 from sqlalchemy.orm import relationship
-import os
+from pathlib import Path
 import dotenv
 
 dotenv.load_dotenv()
 
-engine = sqlalchemy.create_engine(f"sqlite:///database.db")
+BASE_DIR = Path(__file__).resolve().parent
+
+DB_PATH = BASE_DIR / "database.db"
+
+engine = sqlalchemy.create_engine(f"sqlite:///{DB_PATH}")
+
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
 
@@ -125,7 +130,6 @@ def remove_friend_from_db(chat_id, fullname):
         if not user:
             return False
 
-        # FIX: Compared user_id to user.chat_id, and used trim/ilike to prevent spacing/casing bugs
         friend_to_delete = (
             session.query(Circle)
             .filter(

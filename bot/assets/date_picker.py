@@ -159,14 +159,17 @@ def format_birthday_for_user(birthday, user_lang):
         return "N/A" if user_lang == "en" else "ثبت نشده"
     
     try:
-        day, month, year = map(int, birthday.split())
+        if " " in birthday:
+            day, month, year = map(int, birthday.split(" "))
+        else:
+            year, month, day = map(int, birthday.split("-"))
         greg_date = datetime.date(year, month, day)
 
         if user_lang == "fa":
             jalali_date = JalaliDate(greg_date)
             return f"{jalali_date.day} {jalali_date.monthname()} {jalali_date.year}"
         else:
-            return greg_date.strftime("%d %m %Y")
+            return greg_date.strftime("%Y-%m-%d")
         
-    except Exception:
-        return "ERROOOOOORRRR!!!!!!!!!"
+    except Exception as e:
+        return f"Error: {e}, birthday: {birthday}"
