@@ -50,7 +50,7 @@ class UserAppState(rx.State):
     @rx.event
     def fetch_telegram_data(self):
         return rx.call_script(
-            "window.Telegram.WebApp.initData;",
+            "window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp.initData : ''",
             callback=UserAppState.handle_telegram_login,
         )
 
@@ -63,8 +63,8 @@ class UserAppState(rx.State):
         valid_user = validate_telegram_data(raw_init_data)
 
         if valid_user:
-            self.current_chat_id = str(valid_user.get("chat_id"))
-            self.current_user_name = str(valid_user.get("user_id"))
+            self.current_chat_id = str(valid_user.get("id"))
+            self.current_user_name = str(valid_user.get("first_name", "User"))
             self.reload_friends()
 
         else:
