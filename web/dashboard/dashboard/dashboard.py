@@ -14,6 +14,9 @@ app = rx.App(
     stylesheets=[
             "/styles.css", 
     ],
+    head_components=[
+        rx.script(src="https://telegram.org/js/telegram-web-app.js")
+    ],
 )
 
 app.add_page(index, route="/", on_load=UserAppState.fetch_telegram_data)

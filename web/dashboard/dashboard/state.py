@@ -309,7 +309,7 @@ class UserAppState(rx.State):
                 self.form_location,
             )
 
-        self.handle_user_login(self.current_chat_id, self.current_user_name)
+        self.handle_telegram_login(self.current_chat_id, self.current_user_name)
         self.set_show_add_drawer(False)  # Re-use the reset function!
 
     # ================= DELETE FRIEND =================
@@ -335,6 +335,6 @@ class UserAppState(rx.State):
             return
 
         remove_friend_from_db(self.current_chat_id, self.contact_to_delete)
-        self.handle_user_login(self.current_chat_id, self.current_user_name)
+        self.handle_telegram_login(self.current_chat_id, self.current_user_name)
         self.show_delete_dialog = False
         self.contact_to_delete = ""
