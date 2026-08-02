@@ -50,7 +50,7 @@ class UserAppState(rx.State):
     @rx.event
     def fetch_telegram_data(self):
         return rx.call_script(
-            "return window.Telegram.WebApp.initData;",
+            "window.Telegram.WebApp.initData;",
             callback=UserAppState.handle_telegram_login,
         )
 
