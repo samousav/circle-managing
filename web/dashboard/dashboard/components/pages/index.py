@@ -86,8 +86,14 @@ def index() -> rx.Component:
             UserAppState.current_chat_id != "",
             bottom_navbar(),
         ),
-        add_friend_drawer(),
-        delete_confirmation_dialog(),
+        rx.cond(
+            rx.State.is_hydrated,
+            add_friend_drawer(),
+        ),
+        rx.cond(
+            rx.State.is_hydrated,
+            delete_confirmation_dialog(),
+        ),
         on_mount=UserAppState.fetch_telegram_data,
         dir=UserAppState.layout_direction,
         font_family=UserAppState.app_font_family,

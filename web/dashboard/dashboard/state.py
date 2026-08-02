@@ -256,8 +256,6 @@ class UserAppState(rx.State):
     def add_friend(self):
         if not self.current_chat_id:
             return
-
-        # 🟢 Jalali/English Dropdowns -> Gregorian DB
         if self.bday_year and self.bday_month and self.bday_day:
             months_list = self.texts.get("months", [])
             try:
