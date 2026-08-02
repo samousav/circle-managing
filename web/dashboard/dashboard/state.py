@@ -50,7 +50,23 @@ class UserAppState(rx.State):
     @rx.event
     def fetch_telegram_data(self):
         return rx.call_script(
-            "window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp.initData : ''",
+            """
+        new Promise((resolve) => {
+            let attempts = 0;
+            function check() {
+                attempts += 1;
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+                    window.Telegram.WebApp.ready();
+                    resolve(window.Telegram.WebApp.initData);
+                } else if (attempts > 30) {
+                    resolve('');   // give up after ~3s so is_loading doesn't spin forever
+                } else {
+                    setTimeout(check, 100);
+                }
+            }
+            check();
+        })
+        """,
             callback=UserAppState.handle_telegram_login,
         )
 

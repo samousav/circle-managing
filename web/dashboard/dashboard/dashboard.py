@@ -12,12 +12,14 @@ engine = sa.create_engine(f"sqlite:///{DB_PATH}")
 
 app = rx.App(
     stylesheets=[
-            "/styles.css", 
+        "/styles.css",
     ],
     head_components=[
-        rx.script(src="https://telegram.org/js/telegram-web-app.js")
+        rx.script(
+            src="https://telegram.org/js/telegram-web-app.js",
+            strategy="beforeInteractive",
+        )
     ],
 )
 
 app.add_page(index, route="/", on_load=UserAppState.fetch_telegram_data)
-
