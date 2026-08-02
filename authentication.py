@@ -3,6 +3,10 @@ import hmac
 import hashlib
 import urllib.parse
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 def validate_telegram_data(initial_data: str) -> dict | None:
     if not initial_data:

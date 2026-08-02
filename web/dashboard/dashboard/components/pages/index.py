@@ -88,6 +88,7 @@ def index() -> rx.Component:
         ),
         add_friend_drawer(),
         delete_confirmation_dialog(),
+        on_mount=UserAppState.fetch_telegram_data,
         dir=UserAppState.layout_direction,
         font_family=UserAppState.app_font_family,
         background="linear-gradient(180deg, #FE7E3C 0%, #E4201B 100%)", 

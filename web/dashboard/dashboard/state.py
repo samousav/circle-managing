@@ -64,7 +64,7 @@ class UserAppState(rx.State):
 
         if valid_user:
             self.current_chat_id = str(valid_user.get("chat_id"))
-            self.current_chat_id = valid_user.get("first_name", "User")
+            self.current_user_name = str(valid_user.get("user_id"))
             self.reload_friends()
 
         else:
