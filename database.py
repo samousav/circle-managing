@@ -86,11 +86,15 @@ def create_anonymous_session():
 
 
 
-def generate_pending_code_for_session(code: str):
+def generate_pending_code_for_session(session_token: str, code: str):
     with Session() as session:
         current_time = int(time.time())
         session.query(PendingVerification).filter(PendingVerification.expires_at < current_time).delete()
-        new_pending = PendingVerification(code=code, expires_at=current_time+120)
+        new_pending = PendingVerification(
+            code=code, 
+            session_token=session_token,  
+            expires_at=current_time+120
+        )
         session.add(new_pending)
         session.commit()
 
@@ -98,16 +102,26 @@ def generate_pending_code_for_session(code: str):
 def link_chat_id_to_code(code: str, chat_id: int):
     with Session() as session:
         current_time = int(time.time())
+        
+        # 1. Look up the code in the temporary holding pen
         pending = session.query(PendingVerification).filter(
             PendingVerification.code == code,
-            PendingVerification.expires_at > current_time,
-            PendingVerification.chat_id == None,
-        )
+            PendingVerification.expires_at > current_time
+        ).first()
 
         if pending:
-            pending.chat_id == chat_id
-            session.commit()
-            return True
+            # 2. Find the browser session linked to this code
+            app_session = session.query(AppSession).filter(AppSession.token == pending.session_token).first()
+            
+            if app_session:
+                # 3. Save the user's chat_id to their permanent session
+                app_session.chat_id = chat_id
+                
+                # 4. Wipe the temporary 4-digit code
+                session.delete(pending)
+                session.commit()
+                return True
+                
         return False
 
 
