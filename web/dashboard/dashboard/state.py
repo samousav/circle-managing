@@ -1,6 +1,9 @@
 import reflex as rx
 import sys
 import sqlalchemy as sa
+import asyncio
+import random
+import uuid
 from pathlib import Path
 from datetime import date
 from khayyam import JalaliDate
@@ -18,6 +21,10 @@ from database import (
     update_friend_info,
     get_user_language,
     set_user_language,
+    create_anonymous_session,
+    generate_pending_code_for_session,
+    link_tma_to_session,
+    get_chat_id_by_session
 )
 from web.dashboard.assets.texts_en import items as texts_en
 from web.dashboard.assets.texts_fa import items as texts_fa
@@ -28,8 +35,14 @@ class UserAppState(rx.State):
     current_chat_id: str = ""
     current_user_name: str = ""
     friends: list[dict] = []
-    user_language: str = "fa"
+    user_language: str = "en"
     is_loading: bool = True
+    is_web_browser: bool = False
+    verification_code: str = ""
+    verification_code_input: str = ""
+    is_telegram_clicked: bool = False
+    countdown_timer: int = 5
+    time_to_delete_code: int = 120
 
     show_add_drawer: bool = False
     form_fullname: str = ""
@@ -46,6 +59,25 @@ class UserAppState(rx.State):
     bday_day: str = ""
     bday_month: str = ""
     bday_year: str = ""
+
+
+
+    session_token: str = rx.LocalStorage(name="socircle_session")
+        
+    @rx.event
+    def handle_telegram_click(self):
+        if self.is_telegram_clicked:
+            return
+
+        # 1. Flip the UI state
+        self.is_telegram_clicked = True
+        self.verification_code = str(random.randint(1000, 9999))
+        
+        # 2. Save the code to the DB, explicitly linked to THIS browser's session token
+        generate_pending_code_for_session(self.session_token, self.verification_code)
+        
+        # 3. Open the bot in a new tab so they don't lose the website
+        return rx.call_script("setTimeout(() => window.open('https://t.me/socircliobot', '_blank'), 3000)")
 
     @rx.event
     def fetch_telegram_data(self):
@@ -70,27 +102,46 @@ class UserAppState(rx.State):
             callback=UserAppState.handle_telegram_login,
         )
 
+
     @rx.event
     def handle_telegram_login(self, raw_init_data: str):
-        if not raw_init_data:
-            self.is_loading = False
-            return
-        
-        valid_user = validate_telegram_data(raw_init_data)
+        if not self.session_token:
+            self.session_token = create_anonymous_session()
 
-        if valid_user:
-            self.current_chat_id = str(valid_user.get("id"))
-            self.current_user_name = str(valid_user.get("first_name", "User"))
+        existing_chat_id = get_chat_id_by_session(self.session_token)
+        if existing_chat_id:
+            self.current_chat_id = str(existing_chat_id)
+            self.is_web_browser = False
+            self.is_loading = False
             self.reload_friends()
 
-        else:
-            print("🚨 Unauthorized access attempt detected.")
+            if self.router.page.path == "/login":
+                return rx.redirect("/")
+            return
+
+        if raw_init_data:
+            valid_user = validate_telegram_data(raw_init_data)
+
+            if valid_user:
+                self.current_chat_id = str(valid_user.get("id"))
+                self.current_user_name = str(valid_user.get("first_name", "User"))
+                link_tma_to_session(self.session_token, self.current_chat_id)
+                self.is_web_browser = False
+                self.is_loading = False
+                self.reload_friends()
+
+                if self.router.page.path == "/login":
+                    return rx.redirect("/")
+                return
+
+            else:
+                print("🚨 Unauthorized access attempt detected.")
 
         self.is_loading = False
+        self.is_web_browser = True
 
-        if not self.current_chat_id:
-            self.is_loading = False
-            return
+        if self.router.page.path != "/login":
+            return rx.redirect("/login")
 
         
 

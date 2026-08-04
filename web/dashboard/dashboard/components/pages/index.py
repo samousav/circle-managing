@@ -2,6 +2,8 @@ import reflex as rx
 from dashboard.state import UserAppState
 from dashboard.components.navigation import bottom_navbar, render_test_user_button, render_mobile_friend_card
 from dashboard.components.overlays import add_friend_drawer, delete_confirmation_dialog
+from web.dashboard.dashboard.components.styles import BASE_PAGE_STYLE
+
 
 def index() -> rx.Component:
     return rx.box(
@@ -94,14 +96,5 @@ def index() -> rx.Component:
             rx.State.is_hydrated,
             delete_confirmation_dialog(),
         ),
-        on_mount=UserAppState.fetch_telegram_data,
-        dir=UserAppState.layout_direction,
-        font_family=UserAppState.app_font_family,
-        background="linear-gradient(180deg, #FE7E3C 0%, #E4201B 100%)", 
-        background_attachment="fixed",
-        margin="0 auto",
-        padding="1rem",
-        max_width="30rem",
-        min_height="100vh",
-        position="relative",
+        **BASE_PAGE_STYLE,
     )

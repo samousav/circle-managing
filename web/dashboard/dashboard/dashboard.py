@@ -2,6 +2,7 @@ import reflex as rx
 import sqlalchemy as sa
 from pathlib import Path
 from dashboard.components.pages.index import index
+from dashboard.components.pages.login import login_page
 from dashboard.state import UserAppState
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
@@ -22,4 +23,6 @@ app = rx.App(
     ],
 )
 
+
+app.add_page(login_page, route="/login", on_load=UserAppState.fetch_telegram_data)
 app.add_page(index, route="/", on_load=UserAppState.fetch_telegram_data)

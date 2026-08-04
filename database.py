@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, Integer, String, ForeignKey, func
 from sqlalchemy.orm import relationship
 from pathlib import Path
-import dotenv
+import dotenv, time, uuid
 
 dotenv.load_dotenv()
 
@@ -36,10 +36,22 @@ class Circle(Base):
     birthday = Column(String)
     phone = Column(String)
     location = Column(String)
-
-    # Note: Points to chat_id, meaning user_id stores the Telegram ID
     user_id = Column(Integer, ForeignKey("users.chat_id"), nullable=False)
     user = relationship("User", back_populates="circles")
+
+
+class AppSession(Base):
+    __tablename__ = "app_sessions"
+    token = Column(String, primary_key=True)
+    chat_id = Column(Integer, nullable=True)
+    created_at = Column(Integer, )
+
+
+class PendingVerification(Base):
+    __tablename__ = "pending_verifications"
+    code = Column(String, primary_key=True)
+    session_token = Column(String, nullable=False)
+    expires_at = Column(Integer, nullable=False)
 
 
 # ======================== DATABASE ACTIONS ========================
@@ -62,6 +74,67 @@ def get_user(chat_id):
     with Session() as session:
         user = session.query(User).filter(User.chat_id == chat_id).first()
         return user
+
+
+def create_anonymous_session():
+    new_token = str(uuid.uuid4())
+    with Session() as session:
+        new_session = AppSession(token=new_token, created_at=int(time.time()))
+        session.add(new_session)
+        session.commit()
+    return new_token
+
+
+
+def generate_pending_code_for_session(code: str):
+    with Session() as session:
+        current_time = int(time.time())
+        session.query(PendingVerification).filter(PendingVerification.expires_at < current_time).delete()
+        new_pending = PendingVerification(code=code, expires_at=current_time+120)
+        session.add(new_pending)
+        session.commit()
+
+
+def link_chat_id_to_code(code: str, chat_id: int):
+    with Session() as session:
+        current_time = int(time.time())
+        pending = session.query(PendingVerification).filter(
+            PendingVerification.code == code,
+            PendingVerification.expires_at > current_time,
+            PendingVerification.chat_id == None,
+        )
+
+        if pending:
+            pending.chat_id == chat_id
+            session.commit()
+            return True
+        return False
+
+
+def get_chat_id_by_session(session_token: str):
+    if not session_token:
+        return None
+    with Session() as session:
+        app_session = session.query(AppSession).filter(AppSession.token == session_token).first()
+        if app_session and app_session.chat_id:
+            return app_session.chat_id
+    return None
+
+def link_tma_to_session(session_token: str, chat_id: int):
+    with Session() as session:
+        app_session = session.query(AppSession).filter(AppSession.token == session_token).first()
+        if app_session:
+            app_session.chat_id = chat_id
+            session.commit()
+
+def logout_all_devices(chat_id: int):
+    with Session() as session:
+        session.query(AppSession).filter(AppSession.chat_id == chat_id).delete()
+        session.commit()
+
+        
+
+
 
 
 # ======================== USER ACTIONS ========================

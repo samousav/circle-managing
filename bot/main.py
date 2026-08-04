@@ -27,6 +27,7 @@ from bot.handlers.language_handler import (
 )
 from bot.handlers.reminder_handler import birthday_reminder
 from bot.handlers.list_handler import handle_list_actions
+from bot.handlers.authentication_handler import check_for_code
 from bot.admin_functions import (
     get_all_users_handler,
     WAITING_FOR_BROADCAST_CONTENT,
@@ -106,6 +107,7 @@ application.add_handler(
 application.add_handler(CommandHandler("settings", send_language_picker))
 application.add_handler(remove_friend_handler)
 application.add_handler(edit_friend_handler)
+application.add_handler(MessageHandler(filters.Regex(r'^\d{4}$'), check_for_code))
 print("BOT IS RUNNING")
 if __name__ == "__main__":
     application.run_polling()
