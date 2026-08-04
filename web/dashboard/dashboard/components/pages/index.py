@@ -5,6 +5,7 @@ from dashboard.components.overlays import add_friend_drawer, delete_confirmation
 from web.dashboard.dashboard.components.styles import BASE_PAGE_STYLE
 
 
+@rx.page(route="/", title="Socircle - Dashboard")
 def index() -> rx.Component:
     return rx.box(
         rx.cond(

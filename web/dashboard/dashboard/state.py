@@ -65,20 +65,71 @@ class UserAppState(rx.State):
     session_token: str = rx.LocalStorage(name="socircle_session")
         
     @rx.event
-    def handle_telegram_click(self):
+    def check_verification_status(self, _):
+        """🟢 Missing function added: Checks DB when user returns to tab."""
+        existing_chat_id = get_chat_id_by_session(self.session_token)
+        
+        if existing_chat_id:
+            self.current_chat_id = str(existing_chat_id)
+            self.is_web_browser = False
+            self.reload_friends()
+            return rx.redirect("/")
+        else:
+            self.is_telegram_clicked = False
+            self.verification_code = ""
+
+    @rx.event
+    async def handle_telegram_click(self):
+        """🟢 Upgraded to 'async' to support real-time dynamic countdowns."""
         if self.is_telegram_clicked:
             return
 
-        # 1. Flip the UI state
         self.is_telegram_clicked = True
+        self.countdown_timer = 5       # 5 seconds to read code and redirect
+        self.time_to_delete_code = 120 # 2 minutes to verify before timing out
         self.verification_code = str(random.randint(1000, 9999))
         
-        # 2. Save the code to the DB, explicitly linked to THIS browser's session token
         generate_pending_code_for_session(self.session_token, self.verification_code)
         
-        # 3. Open the bot in a new tab so they don't lose the website
-        return rx.call_script("setTimeout(() => window.open('https://t.me/socircliobot', '_blank'), 3000)")
+        # 1. Redirect Timer (UI dynamically ticks 5... 4... 3...)
+        while self.countdown_timer > 0:
+            yield # Instantly pushes the new timer number to the frontend
+            await asyncio.sleep(1)
+            self.countdown_timer -= 1
+            
+        # 2. Open Tab (Fires exactly when timer hits 0)
+        yield rx.call_script("window.open('https://t.me/socircliobot', '_blank')")
+        
+        # 3. Inject Listener for when they return
+        yield rx.call_script(
+            """
+            new Promise((resolve) => {
+                const handler = () => {
+                    if (!document.hidden) {
+                        document.removeEventListener('visibilitychange', handler);
+                        resolve('visible');
+                    }
+                };
+                document.addEventListener('visibilitychange', handler);
+            })
+            """,
+            callback=UserAppState.check_verification_status
+        )
+        
+        # 4. Waiting Timer (UI dynamically ticks 120... 119... 118...)
+        while self.time_to_delete_code > 0 and self.is_telegram_clicked:
+            await asyncio.sleep(1)
+            self.time_to_delete_code -= 1
+            yield
+            
+        # 5. Timeout Cleanup (If they never verified after 120s)
+        if self.time_to_delete_code == 0:
+            self.is_telegram_clicked = False
+            self.verification_code = ""
+            yield rx.call_script("window.location.reload()")
 
+
+        
     @rx.event
     def fetch_telegram_data(self):
         return rx.call_script(
